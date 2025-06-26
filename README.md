@@ -19,6 +19,7 @@ Upon execution, the project will create and organize the following directory str
 - **results/**: Contains evaluation metrics and predictions.
 - **plots/**: Stores generated comparison plots and confusion matrices.
 
+<pre> <code> ``` 
 DSC_NCV/
 ├── MO/                         # Morphometric + CSF features
 │   ├── CN_AD/                  # CN vs AD binary classification
@@ -36,7 +37,7 @@ DSC_NCV/
 ├── metrics_MO.xlsx             # Summary Excel file for MO feature metrics
 ├── metrics_MS.xlsx             # Summary Excel file for MS feature metrics
 └── metrics_GT.xlsx             # Summary Excel file for GT feature metrics
-
+``` </code> </pre>
 
 ## Contributing
 Feel free to open issues or submit pull requests if you have improvements or suggestions. Contributions are welcome!
