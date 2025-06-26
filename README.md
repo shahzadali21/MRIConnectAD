@@ -1,18 +1,16 @@
 # Alzheimer's Disease (AD) Classification - Machine Learning Pipeline
 
 ## Project Overview
-This project implements a machine learning pipeline for the classification of Alzheimer's Disease (AD) into different diagnostic categories: Cognitively Normal (CN), Mild Cognitive Impairment (MCI), and Dementia. The pipeline supports both binary classification (CN vs. Dementia) and three-level classification (CN vs. MCI vs. Dementia) using various machine learning models. It includes preprocessing of multimodal data (clinical, TCK metrics, and graph theory metrics), model training, optimization, voting, explainability, and final model comparison.
+This project implements a modular machine learning pipeline for the classification of Alzheimer's Disease (AD) into different disease stage categories: Cognitively Normal (CN), Mild Cognitive Impairment (MCI), and Dementia (ADD). It includes preprocessing of multimodal data (clinical scores, MO and MS features, and graph theory metrics), model training, optimization, ensemble learning, and explainability of ML model's predictions.
 
 
 
 
 ## Project Structure
 - **preprocessing.py**: Handles the preprocessing of clinical data, including feature scaling and train-test splitting.
-- **model_training.py**: Trains various machine learning models and evaluates their performance on the test set.
-- **model_optimization.py**: Selects top-performing models and optimizes their hyperparameters using GridSearchCV.
-- **voting.py**: Implements voting classifiers using the top-performing models from both the initial and optimized models.
-- **final_comparison.py**: Compares the performance of all models (initial, optimized, and voting classifiers) and generates visualizations.
-- **main.py**: Orchestrates the entire pipeline, running all steps in sequence.
+- **model_utils.py**: Contains core logic for model definition, optimization, ensemble construction, and metrics evaluation.
+- **model_training.py**: Executes model training, nested cross-validation, ensemble learning, and evaluation.
+- **explainability.py**: Compares the performance of all models and provide model explainability using SHAP and LIME visualizations.
 
 ## Directory Structure
 Upon execution, the project will create and organize the following directory structure:
@@ -21,75 +19,24 @@ Upon execution, the project will create and organize the following directory str
 - **results/**: Contains evaluation metrics and predictions.
 - **plots/**: Stores generated comparison plots and confusion matrices.
 
-ProjectOutput_<Feature_Combination>/
-├── CN_vs_AD/               # Classification comparison folder (e.g., CN vs AD)
-│   ├── data/               # Folder to store training and test datasets (X_train, X_test, y_train, y_test)
-│   ├── models/             # Folder to save trained models
-│   ├── plots/              # Folder to save generated plots
-│   └── results/            # Folder to save final results
-├── CN_vs_MCI/              # Another comparison (e.g., CN vs MCI)
-│   ├── data/
-│   ├── models/
-│   ├── plots/
-│   └── results/
-└── CN_MCI_AD/              # Three-level classification folder
-    ├── data/
-    ├── models/
-    ├── plots/
-    └── results/
-
-
-## How to Run the Project
-### Clone the repository
-```
-git clone <https://github.com/shahzadali21/AD_ML_pipeline.git>
-cd <repository-directory>
-```
-### Install dependencies
-- Python 3.7+
-- Ensure you have all the required Python packages installed. You can install them using the following command:
-```
-pip install -r requirements.txt
-```
-
-## Running the Project
-### Option 1: Running the Project Step-by-Step
-#### Step 1: Data Preprocessing
-##### For Clinical Data:
-```
-python preprocessing.py 
-```
-##### For Multimodal Data (Clinical + Graph Theory Metrics + TCK Metrics)
-```
-python preprocessing_multimod.py 
-```
-#### Step 2: Model Training
-```
-python model_training.py 
-```
-#### Step 3: Final Model Comparison
-```
-python final_comparison.py
-```
-#### Step 4: Model Optimization
-```
-python model_optimization.py 
-```
-#### Step 5: Voting Classifiers
-```
-python voting.py 
-```
-#### Step Final Comparison:
-```
-python final_comparison.py 
-```
-
-## Option 2: Full Pipeline Execution
-Alternatively, you can execute the entire pipeline from preprocessing to final comparison in one go using the main.py script:
-```
-python main.py
-```
+DSC_NCV/
+├── MO/                         # Morphometric + CSF features
+│   ├── CN_AD/                  # CN vs AD binary classification
+│   │   ├── data/               # Train/test datasets (X_train.csv, X_test.csv, etc.)
+│   │   ├── models/             # Trained models and ensemble.pkl
+│   │   ├── plots/              # Confusion matrices, ROC curves
+│   │   └── results/            # Metrics, predictions.csv, summary files
+│   ├── CN_MCI/
+│   ├── MCI_AD/
+│   └── CN_MCI_AD/              # Three-class classification
+├── MS/                         # Microstructural + Structural features
+│   └── ...
+├── GT/                         # Graph Theory metrics
+│   └── ...
+├── metrics_MO.xlsx             # Summary Excel file for MO feature metrics
+├── metrics_MS.xlsx             # Summary Excel file for MS feature metrics
+└── metrics_GT.xlsx             # Summary Excel file for GT feature metrics
 
 
 ## Contributing
-Feel free to submit issues or pull requests if you have any improvements or bug fixes.
+Feel free to open issues or submit pull requests if you have improvements or suggestions. Contributions are welcome!
