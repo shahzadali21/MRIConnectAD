@@ -8,15 +8,12 @@ using morphometric + CSF (MO) features. Includes saving models, results, and plo
 import os
 import logging
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Tuple
 from joblib import load
 
 import pandas as pd
 import numpy as np
 from sklearn.exceptions import ConvergenceWarning
-from sklearn.metrics import ConfusionMatrixDisplay
-import matplotlib.pyplot as plt
-import warnings
 
 from DSC_model_utils import (
         load_data, save_data,
@@ -28,9 +25,11 @@ from DSC_model_utils import (
         save_results, save_metrics_to_excel
     )
 
+import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
+warnings.filterwarnings("ignore", category=UserWarning, module='sklearn.neural_network')
 
 
 class ADModelTrainer:

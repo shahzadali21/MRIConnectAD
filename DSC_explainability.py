@@ -18,8 +18,8 @@ import argparse
 import logging
 import pandas as pd
 from utils import load_model, load_data
-import v1_2_visualization as viz
-import v1_2_XAI as xai
+import visualization_utils as viz
+import XAI_utils as xai
 from models import select_top_models
 
 import warnings
