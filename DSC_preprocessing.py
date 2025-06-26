@@ -1,9 +1,6 @@
-# module: v2_preprocessing
+# module: DSC_preprocessing.py
 # -*- coding: utf-8 -*-
 # Author: Shahzad Ali
-# e-mail: shahzad.ali6@unibo.it
-# Created: 2024-10-24
-# Last modified: 2025-06-26 
 
 """
 This script handles the preprocessing of data.
@@ -193,7 +190,7 @@ def create_directory_structure(output_dir, feature_combination_name, classificat
 
 
 # Define feature sets - (Demographic | Clinical | GT (Local/Global) | MO | MS Features)
-demographic_features = ['Age', 'PTEDUCAT', 'Gender', 'Marital_Status', 'APOE4']  # 'RG', 'DX', 'deltaMMSE/Years' 'Sex', 'PTMARRY',|| 'Sex_M', 'PTMARRY_Widowed', 'PTMARRY_Never married', 'PTMARRY_Married', 'PTMARRY_Unknown' (only if they are one-hot encoded)
+demographic_features = ['Age', 'Education_level', 'Gender', 'Marital_status', 'APOE4']  # 'RG', 'DX', 'deltaMMSE/Years' 'Sex', 'PTMARRY',|| 'Sex_M', 'PTMARRY_Widowed', 'PTMARRY_Never married', 'PTMARRY_Married', 'PTMARRY_Unknown' (only if they are one-hot encoded)
 clinical_features = ['MMSE_bl', 'MMSE', 'MOCA_bl', 'MOCA', 'CDRSB_bl', 'CDRSB', 'ADAS11_bl', 'ADAS11', 'ADAS13_bl', 'ADAS13', 'ADASQ4_bl', 'ADASQ4']
 GT_local_metrics = [f'degree_centrality_node_{i}' for i in range(82)] + [f'clustering_coefficient_node_{i}' for i in range(82)] + [f'betweenness_centrality_node_{i}' for i in range(82)] + [f'eigenvector_centrality_node_{i}' for i in range(82)] + [f'closeness_centrality_node_{i}' for i in range(82)] + [f'node_strength_node_{i}' for i in range(82)] + [f'pagerank_node_{i}' for i in range(82)]
 GT_global_metrics = ['density', 'modularity', 'assortativity', 'transitivity', 'global_efficiency', 'characteristic_path_length', 'diameter', 'degree_distribution_entropy', 'resilience', 'spectral_radius', 'small_worldness', 'avg_clustering_coefficient', 'avg_degree', 'avg_betweenness_centrality', 'avg_edge_betweenness_centrality', 'avg_eigenvector_centrality', 'avg_closeness_centrality', 'avg_node_strength', 'avg_pagerank']
@@ -210,7 +207,7 @@ def parse_arguments():
     
     parser.add_argument('--target_column', type=str, default='DX_le', choices=['DX_le', 'RG_le'], help="Specify which column to use as the target")
     
-    parser.add_argument('--output_dir', type=str, default='DSC_NCV', help="Main project directory for output data")
+    parser.add_argument('--output_dir', type=str, default='OutputDir_DSC_NCV', help="Main project directory for output data")
     #choices=["none", "mutual_info", "anova", "rfe_elastic_net", "random_forest", "pca", "ga"]
     parser.add_argument('--scaler', type=str, default='minmax', choices=['standard', 'minmax'], help="Type of scaler to use")
     parser.add_argument('--test_size', type=float, default=0.20, help="Proportion of the dataset to include in the test split")
@@ -234,12 +231,12 @@ def main():
 
     feature_combinations = {
 
-        'MO': csf_feature + morphometric_features,
-        'MS': csf_feature + microstructural_features,
-        'GT': csf_feature + GT_global_metrics + GT_local_metrics,
-        'MO_MS': csf_feature + microstructural_features + morphometric_features,
-        'MO_MS_GT': csf_feature + microstructural_features + morphometric_features + GT_global_metrics + GT_local_metrics,
-        'DG_MO_MS_GT': csf_feature + demographic_features + microstructural_features + morphometric_features + GT_global_metrics + GT_local_metrics,
+        '1_MO': csf_feature + morphometric_features,
+        '2_MS': csf_feature + microstructural_features,
+        '3_GT': csf_feature + GT_global_metrics + GT_local_metrics,
+        '4_MO_MS': csf_feature + microstructural_features + morphometric_features,
+        '5_MO_MS_GT': csf_feature + microstructural_features + morphometric_features + GT_global_metrics + GT_local_metrics,
+        '6_DG_MO_MS_GT': csf_feature + demographic_features + microstructural_features + morphometric_features + GT_global_metrics + GT_local_metrics,
         }
     
     # Loop over each feature set combination

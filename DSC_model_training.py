@@ -1,5 +1,6 @@
-# module: run_ensemble_nested_cv_full.py
+# module: DSC_model_training.py
 # -*- coding: utf-8 -*-
+# Author: Shahzad Ali
 """
 Run complete ensemble model training and nested cross-validation pipeline
 using morphometric + CSF (MO) features. Includes saving models, results, and plots.
@@ -13,7 +14,6 @@ from joblib import load
 
 import pandas as pd
 import numpy as np
-from sklearn.exceptions import ConvergenceWarning
 
 from DSC_model_utils import (
         load_data, save_data,
@@ -26,6 +26,7 @@ from DSC_model_utils import (
     )
 
 import warnings
+from sklearn.exceptions import ConvergenceWarning
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
@@ -38,9 +39,16 @@ class ADModelTrainer:
         'three_level': ['CN_MCI_AD']
     }
 
-    FEATURE_COMBINATIONS = ['MO', 'MS', 'GT', 'MO_MS', 'MO_MS_GT', 'DG_MO_MS_GT']  # Add other feature sets as needed
+    FEATURE_COMBINATIONS = [
+                            '1_MO',
+                            '2_MS',
+                            '3_GT',
+                            '4_MO_MS',
+                            '5_MO_MS_GT',
+                            '6_DG_MO_MS_GT'
+                        ]
 
-    def __init__(self, output_dir: str = 'DSC_NCV', n_jobs: int = -1):
+    def __init__(self, output_dir: str = 'OutputDir_DSC_NCV', n_jobs: int = -1):
         self.output_dir = Path(output_dir)
         self.n_jobs = n_jobs if n_jobs != -1 else os.cpu_count() - 1
         self.metrics_dict = {}
@@ -59,6 +67,7 @@ class ADModelTrainer:
         return data_dir, models_dir, results_dir, plots_dir
 
     def load_and_validate_data0(self, data_dir: Path) -> Tuple[pd.DataFrame, pd.DataFrame, np.ndarray, np.ndarray]:
+        # giving error while working with GT features onwards
         logging.info("Loading preprocessed data")
         X_train = pd.read_csv(data_dir / 'X_train.csv')
         X_test = pd.read_csv(data_dir / 'X_test.csv')
@@ -77,6 +86,7 @@ class ADModelTrainer:
         return X_train, X_test, y_train, y_test
     
     def load_and_validate_data(self, data_dir: Path) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        # latest versions of load_and_validate_data have data in numpy format
         logging.info("Loading preprocessed data")
         X_train = pd.read_csv(data_dir / 'X_train.csv').to_numpy(copy=True)
         X_test = pd.read_csv(data_dir / 'X_test.csv').to_numpy(copy=True)
@@ -107,7 +117,7 @@ class ADModelTrainer:
         predictions = {}
         for name in models:
             try:
-                best_model = load(models_dir / f'best_{name}.pkl')
+                best_model = load(models_dir / f'{name}.pkl')
                 y_pred = best_model.predict(X_test)
                 predictions[name] = y_pred
             except Exception as e:

@@ -1,5 +1,6 @@
-# module: models_utils.py
+# module: DCS_models_utils.py
 # -*- coding: utf-8 -*-
+# Author: Shahzad Ali
 """
 Enhanced model training, evaluation, and ensemble creation module.
 Includes hyperparameter optimization, nested cross-validation, and model persistence.
@@ -46,26 +47,139 @@ def get_models_and_params(seed: int=42) -> Dict[str, Tuple[BaseEstimator, Dict]]
     """Return dictionary of models and their parameter grids with metadata."""
     return{
         # Linear Models
-        'LR': (LogisticRegression(random_state=seed), {'C': [0.001, 0.01, 0.1, 1, 10, 100], 'penalty': ['l1', 'l2', 'elasticnet'], 'solver': ['liblinear', 'lbfgs', 'saga', 'newton-cg'], 'max_iter': [50, 100, 500, 1000, 5000]}),
-        'LR-SGD': (SGDClassifier(loss='log_loss', random_state=seed), {'penalty': ['l2', 'l1', 'elasticnet'], 'alpha': np.logspace(-6, -1, 6), 'learning_rate': ['constant', 'invscaling', 'adaptive'],'eta0': [0.001, 0.01, 0.1],'max_iter': [500, 1000, 1500], 'tol': [1e-3, 1e-4], 'early_stopping': [True], 'validation_fraction': [0.1], 'n_iter_no_change': [5]}),
-        'LDA': (LinearDiscriminantAnalysis(), {'solver': ['lsqr'], 'shrinkage': ['auto', 0.0, 0.25, 0.5] + list(np.linspace(0, 1, 5)),'tol': [1e-4, 1e-3, 1e-2]}),
+        'LR': (LogisticRegression(random_state=seed), 
+               {
+                'C': [0.001, 0.01, 0.1, 1, 10, 100], 
+                'penalty': ['l1', 'l2', 'elasticnet'], 
+                'solver': ['saga'], 
+                'max_iter': [100, 500, 1000],
+                'class_weight': [None, 'balanced'],
+                'l1_ratio': [0.0, 0.25, 0.5, 0.75, 1.0]  # REQUIRED if 'penalty' is 'elasticnet'
+                }
+            ),
+        
+        'LR-SGD': (SGDClassifier(random_state=seed), 
+                {
+                'loss': ['log_loss', 'modified_huber'], 
+                'penalty': ['l2', 'l1', 'elasticnet'],
+                'alpha': np.logspace(-6, -1, 6), 
+                'learning_rate': ['constant', 'invscaling', 'adaptive'],
+                'eta0': [0.001, 0.01, 0.1],
+                'max_iter': [500, 1000], 
+                'tol': [1e-3, 1e-4], 
+                'early_stopping': [True],
+                'validation_fraction': [0.1],
+                'n_iter_no_change': [5],
+                'class_weight': ['balanced']
+                }
+            ),
+        
+        'LDA': (LinearDiscriminantAnalysis(),
+                {
+                'solver': ['lsqr'], 
+                'shrinkage': ['auto', 0.0, 0.25, 0.5] + list(np.linspace(0, 1, 5)),
+                'tol': [1e-4, 1e-3, 1e-2]
+                }
+            ),
         
         # Tree-based Models
-        'DT': (DecisionTreeClassifier(random_state=seed), {'criterion': ['gini', 'entropy'], 'max_depth': [3, 5, 10, 15, 20, None], 'min_samples_split': [2, 5, 10], 'min_samples_leaf': [1, 2, 4], 'max_features': [0.3, 0.5, 0.7, 1.0]}),
-        'RF': (RandomForestClassifier(random_state=seed), {'n_estimators': [50, 100, 200], 'max_depth': [5, 10, 20, None], 'min_samples_split': [2, 5], 'min_samples_leaf': [1, 2], 'bootstrap': [True, False], 'max_features': ['sqrt', 'log2']}),
-        'AdB': (AdaBoostClassifier(random_state=seed), {'n_estimators': [50, 100, 200], 'learning_rate': [0.01, 0.1, 0.5, 1.0], 'algorithm': ['SAMME'], 'estimator': [None, DecisionTreeClassifier(max_depth=1), DecisionTreeClassifier(max_depth=2)]}),
-        'XGB': (XGBClassifier(random_state=seed, eval_metric='logloss'), {'n_estimators': [50, 100, 200], 'learning_rate': [0.01, 0.1, 0.3], 'max_depth': [3, 5, 7], 'subsample': [0.8, 1.0], 'colsample_bytree': [0.8, 1.0], 'gamma': [0, 0.1], 'reg_alpha': [0, 0.1], 'reg_lambda': [1, 1.5]}),
+        'DT': (DecisionTreeClassifier(random_state=seed), 
+                {
+                'criterion': ['gini', 'entropy'], 
+                'max_depth': [3, 5, 10, 15, 20, None], 
+                'min_samples_split': [2, 5, 10], 
+                'min_samples_leaf': [1, 2, 4], 
+                'max_features': [0.3, 0.5, 0.7, 1.0],
+                'class_weight': [None, 'balanced']
+                }
+            ),
+        
+        'RF': (RandomForestClassifier(random_state=seed),
+               {
+                'n_estimators': [50, 100, 200], 
+                'max_depth': [5, 10, 20, None], 
+                'min_samples_split': [2, 5], 
+                'min_samples_leaf': [1, 2], 
+                'bootstrap': [True, False], 
+                'max_features': ['sqrt', 'log2'],
+                'class_weight': [None, 'balanced']
+                }
+            ),
+        
+        'AdB': (AdaBoostClassifier(random_state=seed),
+                {
+                'n_estimators': [50, 100, 200], 
+                'learning_rate': [0.01, 0.1, 0.5, 1.0], 
+                'algorithm': ['SAMME'], 
+                'estimator': [
+                            None, 
+                            DecisionTreeClassifier(max_depth=1), 
+                             DecisionTreeClassifier(max_depth=2)]
+                }
+            ),
+        
+        'XGB': (XGBClassifier(random_state=seed, eval_metric='logloss', use_label_encoder=False), 
+                {
+                'n_estimators': [50, 100, 200], 
+                'learning_rate': [0.01, 0.1, 0.3],
+                'max_depth': [3, 5, 7],
+                'subsample': [0.8, 1.0],
+                'colsample_bytree': [0.8, 1.0],
+                'gamma': [0, 0.1], 
+                'reg_alpha': [0, 0.1], 
+                'reg_lambda': [1, 1.5],
+                'scale_pos_weight': [1, 2, 5]  # Imbalance-aware
+                }
+            ),
 
         # Kernel
-        'SVM': (SVC(random_state=seed, probability=True), {'C': [0.1, 1, 10, 100], 'kernel': ['linear', 'poly', 'rbf'], 'gamma': ['scale', 'auto']}),
+        'SVM': (SVC(random_state=seed, probability=True), 
+                {
+                'C': [0.1, 1, 10, 100], 
+                'kernel': ['linear', 'poly', 'rbf'],
+                'degree': [2, 3], 
+                'gamma': ['scale', 'auto'],
+                'class_weight': [None, 'balanced']
+                }
+            ),
 
         # Distance-based
-        'KNN': (KNeighborsClassifier(), {'n_neighbors': list(range(1, 21, 2)), 'weights': ['uniform', 'distance'], 'p': [1, 2], 'metric': ['euclidean', 'manhattan', 'minkowski']}),
+        'KNN': (KNeighborsClassifier(), 
+                {
+                'n_neighbors': list(range(1, 21, 2)), 
+                'weights': ['uniform', 'distance'], 
+                'p': [1, 2], 
+                'metric': ['euclidean', 'manhattan', 'minkowski']
+                }
+            ),
+        
         # Probabilistic Models
-        'NB': (GaussianNB(), {'var_smoothing': np.logspace(-12, -3, 20), 'priors': [None]}),
+        'NB': (GaussianNB(), 
+               {
+                'var_smoothing': np.logspace(-12, -3, 20), 
+                'priors': [None]
+                }
+            ),
 
         # Neural Networks
-        'MLP': (MLPClassifier(random_state=seed), {'hidden_layer_sizes': [(50,), (100,), (50, 25), (100, 50), (50, 50, 25)], 'activation': ['relu', 'tanh'], 'solver': ['adam'], 'alpha': np.logspace(-5, -1, 5), 'learning_rate': ['constant', 'adaptive'], 'learning_rate_init': [0.001, 0.0001], 'batch_size': [32, 64, 128], 'max_iter': [200, 400], 'early_stopping': [True], 'validation_fraction': [0.1], 'beta_1': [0.9, 0.99], 'beta_2': [0.999, 0.9999], 'epsilon': [1e-8, 1e-5], 'n_iter_no_change': [10]})
+        'MLP': (MLPClassifier(random_state=seed), 
+                {
+                'hidden_layer_sizes': [(50,), (100,), (50, 25), (100, 50), (50, 50, 25)], 
+                'activation': ['relu', 'tanh'], 
+                'solver': ['adam', 'sgd'], 
+                'alpha': np.logspace(-5, -1, 5), 
+                'learning_rate': ['constant', 'adaptive'], 
+                'learning_rate_init': [0.001, 0.0001], 
+                'batch_size': [4, 8, 16], 
+                'max_iter': [200, 400, 600], 
+                'early_stopping': [True], 
+                'validation_fraction': [0.1], 
+                'beta_1': [0.9, 0.99], 
+                'beta_2': [0.999, 0.9999], 
+                'epsilon': [1e-8, 1e-5], 
+                'n_iter_no_change': [10]
+                }
+            )
     }
 
 
