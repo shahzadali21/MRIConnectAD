@@ -47,7 +47,7 @@ def get_models_and_params(seed: int=42) -> Dict[str, Tuple[BaseEstimator, Dict]]
     """Return dictionary of models and their parameter grids with metadata."""
     return{
         # Linear Models
-        'LR': (LogisticRegression(random_state=seed), 
+        'LogR': (LogisticRegression(random_state=seed), 
                {
                 'C': [0.001, 0.01, 0.1, 1, 10, 100], 
                 'penalty': ['l1', 'l2', 'elasticnet'], 
@@ -106,7 +106,7 @@ def get_models_and_params(seed: int=42) -> Dict[str, Tuple[BaseEstimator, Dict]]
                 }
             ),
         
-        'AdB': (AdaBoostClassifier(random_state=seed),
+        'AdaB': (AdaBoostClassifier(random_state=seed),
                 {
                 'n_estimators': [50, 100, 200], 
                 'learning_rate': [0.01, 0.1, 0.5, 1.0], 
@@ -118,7 +118,7 @@ def get_models_and_params(seed: int=42) -> Dict[str, Tuple[BaseEstimator, Dict]]
                 }
             ),
         
-        'XGB': (XGBClassifier(random_state=seed, eval_metric='logloss', use_label_encoder=False), 
+        'XGB': (XGBClassifier(random_state=seed, eval_metric='logloss'), 
                 {
                 'n_estimators': [50, 100, 200], 
                 'learning_rate': [0.01, 0.1, 0.3],
@@ -188,56 +188,44 @@ def get_ensemble_model_from_top_models(
     models_dict: Dict,
     strategy: str = 'mean',
     top_k: int = 3,
-    seed: int = 42
+    seed: int = 42,
+    models_path: str = None
 ) -> Tuple[VotingClassifier, List[str]]:
-    """
-    Create an ensemble model from base classifiers with flexible strategies.
-
-    Args:
-        summary_df: DataFrame with long-format model performance metrics (Index = metric)
-        models_dict: Dictionary of available models
-        strategy: 'mean', 'topk', or 'weighted'
-        top_k: Number of top models to include (for 'topk' or 'weighted' strategy)
-        seed: Random seed for reproducibility
-
-    Returns:
-        Configured VotingClassifier ensemble
-    """
+    from joblib import load
+    import os
+    from sklearn.ensemble import VotingClassifier
 
     # Filter accuracy rows
     accuracy_df = summary_df[summary_df['index'] == 'Accuracy']
 
     if strategy == 'mean':
-        # Compute global mean accuracy
         global_mean_acc = accuracy_df['mean'].mean()
         selected_models = accuracy_df[accuracy_df['mean'] > global_mean_acc]['Model'].unique()
         weights = None
-
     elif strategy == 'topk':
-        # Sort by Mean descending, then Std ascending for stability
         sorted_df = accuracy_df.sort_values(by=['mean', 'std'], ascending=[False, True])
         selected_models = sorted_df.head(top_k)['Model'].tolist()
         weights = None
-
     elif strategy == 'weighted':
-        # Select top-k and use mean accuracy as weights
         sorted_df = accuracy_df.sort_values(by=['mean', 'std'], ascending=[False, True])
         top_models_df = sorted_df.head(top_k)
         selected_models = top_models_df['Model'].tolist()
         weights = top_models_df['mean'].values
-
     else:
         raise ValueError("strategy must be 'mean', 'topk', or 'weighted'")
 
-    # Build ensemble estimators from models_dict
-    ensemble_estimators = [
-        (name.lower(), models_dict[name][0])  # Access model from tuple (model, params)
-        for name in selected_models
-        if name in models_dict
-    ]
+    # Load pretrained models from disk
+    ensemble_estimators = []
+    for name in selected_models:
+        model_filename = os.path.join(models_path, f"{name}.pkl") if models_path else None
+        if model_filename and os.path.exists(model_filename):
+            clf = load(model_filename)
+            ensemble_estimators.append((name.lower(), clf))
+        else:
+            raise FileNotFoundError(f"Trained model for {name} not found at {model_filename}")
 
     if not ensemble_estimators:
-        raise ValueError("No models selected for ensemble. Check your selection strategy.")
+        raise ValueError("No valid models loaded for ensemble creation.")
 
     voting_model = VotingClassifier(
         estimators=ensemble_estimators,
@@ -245,8 +233,9 @@ def get_ensemble_model_from_top_models(
         weights=weights,
         n_jobs=-1
     )
-    
+
     return voting_model, selected_models
+
 
 
 # Hyperparameter search function
@@ -483,7 +472,7 @@ def run_nested_evaluations(
 
     for name, model_info in tqdm(models_with_params.items(), desc="Nested CV", unit="model"):
         logger.info(f"\nRunning nested CV for: {name}")
-        model_path = os.path.join(models_path, f"best_{name}.pkl")
+        model_path = os.path.join(models_path, f"{name}.pkl")
         result_path = os.path.join(results_path, f"nested_cv_{name}.csv")
         skip_model = os.path.exists(model_path) and os.path.exists(result_path)
 
@@ -635,32 +624,6 @@ def load_model(path: str) -> BaseEstimator:
     if not os.path.exists(path):
         raise FileNotFoundError(f"No model found at {path}")
     return joblib.load(path)
-
-# def save_model(model, model_name, output_dir):
-#     if not os.path.exists(output_dir):
-#         os.makedirs(output_dir)
-    
-#     file_path = os.path.join(output_dir, f"{model_name}.joblib")
-#     joblib.dump(model, file_path)
-#     logging.info(f"Model saved to {file_path}")
-
-# def load_model(model_name, input_dir):
-#     # Construct the full path to the model file
-#     file_path = os.path.join(input_dir, f"{model_name}.joblib")
-    
-#     # Check if the file exists
-#     if not os.path.exists(file_path):
-#         logging.error(f"Model file not found: {file_path}")
-#         raise FileNotFoundError(f"No model found at {file_path}")
-    
-#     # Load the model using joblib
-#     try:
-#         model = joblib.load(file_path)
-#         logging.info(f"Model successfully loaded from {file_path}")
-#         return model
-#     except Exception as e:
-#         logging.error(f"Error loading model from {file_path}: {e}")
-#         raise RuntimeError(f"Failed to load model {model_name} from {file_path}")
 
 
 def load_data(file_path):

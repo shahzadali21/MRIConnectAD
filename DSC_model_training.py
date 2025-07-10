@@ -128,7 +128,8 @@ class ADModelTrainer:
             models_dict=models,
             strategy='topk',
             top_k=3,
-            seed=42
+            seed=42,
+            models_path=models_dir
         )
 
         ensemble.fit(X_train, y_train)
@@ -188,7 +189,7 @@ class ADModelTrainer:
 def main():
     logging.info("=== Initializing Alzheimer's ML Pipeline ===")
 
-    output_dir = 'DSC_NCV'
+    output_dir = 'OutputDir_DSC_NCV'
     if not Path(output_dir).exists():
         logging.error(f"Missing preprocessed directory: {output_dir}. Run preprocessing first.")
         return
